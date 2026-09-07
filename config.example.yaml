@@ -1,0 +1,34 @@
+# Google Service Activation Auto-Redeemer Configuration
+# Copy this file to config.yaml and edit with your settings.
+
+redeemer:
+  # Browser mode: set to false to see the browser window during redemption
+  headless: false
+
+  # Browser profile storage (persists your Google login and cookies)
+  # Keeping this directory intact allows you to stay logged in across sessions
+  user_data_dir: "./google_profile"
+
+  # Timeout in seconds for page navigation and element waiting
+  timeout: 30
+
+  # Automatic submission:
+  # Set to true to automatically click 'Start subscription' / 'Agree & continue'
+  # Set to false to halt and let you inspect the offer details before confirming
+  auto_confirm: true
+
+  # Optional proxy server (e.g. http://127.0.0.1:7890 or socks5://127.0.0.1:1080)
+  proxy: ""
+
+  # Clipboard monitoring interval in seconds for daemon/listen mode
+  clipboard_poll_interval: 1.0
+
+# Notification webhook settings (Optional)
+notifications:
+  enabled: false
+  # Supported types: telegram, discord, webhook
+  type: "telegram"
+  telegram:
+    bot_token: ""
+    chat_id: ""
+  webhook_url: ""
