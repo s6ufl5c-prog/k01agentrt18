@@ -1,8 +1,8 @@
-# Google Service Activation Auto-Redeemer (秒抢自动兑换神器)
+# Google Service Activation Auto-Redeemer & Account Manager (秒抢自动兑换与账号管理系统)
 
-一个专为 `serviceactivation.google.com` 格式促销订阅链接（如 Google One、Gemini Advanced、YouTube 合作权益等）打造的高性能、防风控、全自动极速兑换工具。
+一个专为 `serviceactivation.google.com` 格式促销订阅链接（如 Google One、Gemini Advanced、YouTube 合作权益等）打造的高性能、防风控、全自动极速兑换工具，配套全功能高颜值 Web 控制台、MailNest 临时邮箱接码接口以及住宅 IP 代理防风控调度系统。
 
-由于此类链接具有极高的时效性且通常仅支持单次兑换，本工具采用**剪贴板极速监听（Sniper 模式）**与**抗指纹探测浏览器持久化会话（Patchright）**，实现“复制即秒兑”，杜绝手动打开网页卡顿和被抢先兑换的痛点。
+由于此类链接具有极高的时效性且通常仅支持单次兑换，本工具采用**剪贴板极速监听（Sniper 模式）**与**抗指纹探测浏览器持久化会话（Patchright）**，结合**多节点住宅 IP 动态路由**与**MailNest 临时邮箱自动接码验证**，实现“复制即秒兑、批量防风控”，杜绝手动打开网页卡顿和被抢先兑换的痛点。
 
 ---
 
@@ -10,6 +10,9 @@
 
 - **持久化 Google 登录态**：基于 Persistent Browser Context，只需首次登录一次 Google 账号，后续兑换无需重复输入账号密码与 2FA。
 - **抗自动化风控 (Patchright / Anti-Bot Detection)**：绕过 Google 对标准 Playwright/Selenium 的 WebDriver 特征检测，避免触发无尽人机验证与拦截。
+- **macOS 风格 Web 控制台 (WebUI)**：提供一体化概览看板、实时任务控制、Kiro 账号数统计与成功率监控。
+- **MailNest 临时邮箱接口对接**：内置 MailNest API 客户端，支持一键配置 API Key、项目代码、连通性测试及验证码/激活链接实时提取。
+- **IP 代理管理中心 (防风控)**：支持住宅家宽 / 数据中心多类型代理，具备单节点/批量延迟测速、启用/禁用一键切换与批量管理。
 - **剪贴板实时监听 (Sniper 模式)**：后台静默监听系统剪贴板，一旦复制到包含 `serviceactivation.google.com` 的链接，毫秒级拉起并自动完成确认。
 - **全自动点击与智能状态识别**：
   - 自动识别“开始订阅 / 同意并继续 / Agree and continue”等多种语言确认按钮。
@@ -41,6 +44,16 @@
 ---
 
 ## 使用指南
+
+### 1. 启动 WebUI 控制台 (推荐)
+
+运行后台控制服务：
+```bash
+python server.py
+```
+浏览器访问 [http://127.0.0.1:8000](http://127.0.0.1:8000) 即可使用完整的 WebUI 管理看板，包括任务概览、MailNest 临时邮箱测试与 IP 代理防风控调度。
+
+---
 
 ### 1. 首次运行：保存 Google 登录态 (推荐)
 

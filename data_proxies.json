@@ -1,0 +1,14 @@
+[
+  {
+    "id": "px_1",
+    "address": "138.74.196.236:8080",
+    "ip": "138.74.196.236",
+    "port": 8080,
+    "type": "家宽",
+    "country_code": "US",
+    "country_name": "美国",
+    "latency": 922,
+    "status": true,
+    "protocol": "http"
+  }
+]

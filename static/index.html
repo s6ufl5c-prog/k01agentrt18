@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Service & Account Manager</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            app: {
+              bg: '#EAF0FC',
+              card: '#FFFFFF',
+              sidebar: '#FFFFFF',
+              border: '#E2E8F0',
+              primary: '#181E2C',
+              accent: '#2563EB',
+              accentLight: '#EFF6FF',
+              purple: '#8B5CF6',
+              green: '#10B981',
+              red: '#EF4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #E8EFFD;
+      user-select: none;
+    }
+    /* macOS styled smooth scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    .nav-btn {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-btn.active {
+      background-color: #E0EBFE;
+      color: #2563EB;
+      position: relative;
+    }
+    .sidebar-wrapper {
+      position: relative;
+    }
+    .active-indicator {
+      position: absolute;
+      left: 0;
+      width: 4px;
+      height: 24px;
+      background-color: #2563EB;
+      border-radius: 0 4px 4px 0;
+      transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 lg:p-6 antialiased">
+
+  <!-- App Main Window Shell (macOS Style) -->
+  <div class="w-full max-w-[1240px] bg-[#EAF0FC] rounded-[24px] shadow-2xl border border-white/60 overflow-hidden flex flex-col min-h-[760px] relative">
+    
+    <!-- Top Header / Window Controls -->
+    <div class="h-12 bg-transparent flex items-center justify-between px-6 pt-2 select-none">
+      <!-- Traffic lights -->
+      <div class="flex items-center space-x-2">
+        <div class="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]/50"></div>
+        <div class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]/50"></div>
+        <div class="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]/50"></div>
+      </div>
+      <!-- Page Title -->
+      <div id="headerTitle" class="text-sm font-semibold text-slate-700 tracking-wide">
+        概览
+      </div>
+      <div class="w-12"></div>
+    </div>
+
+    <!-- Main Content Area with Floating Sidebar -->
+    <div class="flex-1 flex px-5 pb-6 pt-2 gap-5 overflow-hidden">
+      
+      <!-- Left Floating Sidebar Pill -->
+      <aside class="w-[72px] bg-white rounded-[24px] shadow-sm border border-slate-200/60 flex flex-col items-center justify-between py-6 shrink-0 relative">
+        <div id="sidebarIndicator" class="active-indicator top-[36px]"></div>
+        <!-- Top Navigation Icons -->
+        <div class="flex flex-col items-center space-y-3 w-full px-2">
+          <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn active w-12 h-12 rounded-xl flex items-center justify-center text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition" title="概览与任务">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+          </button>
+          <button onclick="switchTab('accounts')" id="btn-accounts" class="nav-btn w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition" title="账号数据">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </button>
+          <button onclick="switchTab('mailnest')" id="btn-mailnest" class="nav-btn w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition" title="MailNest 临时邮箱">
+            <i data-lucide="mail" class="w-5 h-5"></i>
+          </button>
+          <button onclick="switchTab('proxies')" id="btn-proxies" class="nav-btn w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition" title="IP 管理 (防风控)">
+            <i data-lucide="shield" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Bottom Tools / Settings -->
+        <div class="flex flex-col items-center space-y-3 w-full px-2">
+          <button onclick="showModal('infoModal')" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition" title="关于系统">
+            <i data-lucide="help-circle" class="w-5 h-5"></i>
+          </button>
+          <button onclick="showModal('settingsModal')" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition" title="系统设置">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+          </button>
+          <button class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition" title="亮暗切换">
+            <i data-lucide="sun" class="w-5 h-5"></i>
+          </button>
+          <div class="w-6 h-4 rounded overflow-hidden shadow-xs flex items-center justify-center bg-[#DE2910] text-[10px] text-[#FFDE00] font-bold" title="当前区域: 中国/默认">
+            <svg viewBox="0 0 30 20" class="w-full h-full">
+              <rect width="30" height="20" fill="#de2910"/>
+              <polygon points="5,2 6.5,6.5 2,3.8 8,3.8 3.5,6.5" fill="#ffde00"/>
+              <polygon points="10,1 10.5,2.5 9,1.5 11,1.5 9.5,2.5" fill="#ffde00"/>
+              <polygon points="12,3 12.5,4.5 11,3.5 13,3.5 11.5,4.5" fill="#ffde00"/>
+              <polygon points="12,6 12.5,7.5 11,6.5 13,6.5 11.5,7.5" fill="#ffde00"/>
+              <polygon points="10,8 10.5,9.5 9,8.5 11,8.5 9.5,9.5" fill="#ffde00"/>
+            </svg>
+          </div>
+          <button onclick="location.reload()" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 transition" title="刷新应用">
+            <i data-lucide="rotate-cw" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Center Workspace Panel -->
+      <main class="flex-1 overflow-y-auto pr-1">
+        
+        <!-- 1. DASHBOARD TAB (图1 概览) -->
+        <section id="tab-dashboard" class="tab-pane space-y-5">
+          <!-- Top Stat Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Card 1: 账号数 -->
+            <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-100 flex items-center space-x-6">
+              <div class="w-16 h-16 rounded-[20px] bg-[#7C3AED] flex items-center justify-center shadow-md shadow-purple-500/20">
+                <!-- Cute Ghost Mascot Icon matching Image #1 -->
+                <svg viewBox="0 0 48 48" class="w-10 h-10 text-white fill-current">
+                  <path d="M24 6C16.27 6 10 12.27 10 20v18c0 1.1.9 2 2 2 1.3 0 2.4-.8 2.8-2l2.4-7.2c.4-1.2 1.5-2 2.8-2s2.4.8 2.8 2l2.4 7.2c.4 1.2 1.5 2 2.8 2s2.4-.8 2.8-2l2.4-7.2c.4-1.2 1.5-2 2.8-2s2.4.8 2.8 2l2.4 7.2c.4 1.2 1.5 2 2.8 2 1.1 0 2-.9 2-2V20c0-7.73-6.27-14-14-14zm-4 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm8 0c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-slate-500">Kiro 账号数</div>
+                <div id="statTotalAccounts" class="text-4xl font-bold text-slate-800 tracking-tight mt-1">0</div>
+              </div>
+            </div>
+
+            <!-- Card 2: 成功率 -->
+            <div class="bg-white rounded-[24px] p-6 shadow-sm border border-slate-100 flex items-center space-x-6">
+              <div class="w-16 h-16 rounded-[20px] flex items-center justify-center">
+                <div class="w-14 h-14 rounded-full border-4 border-[#10B981] flex items-center justify-center text-[#10B981]">
+                  <svg viewBox="0 0 24 24" class="w-7 h-7 stroke-current fill-none stroke-[3.5] stroke-linecap-round stroke-linejoin-round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-slate-500">注册成功率</div>
+                <div id="statSuccessRate" class="text-4xl font-bold text-slate-800 tracking-tight mt-1">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Task Control Card -->
+          <div class="bg-white rounded-[24px] p-7 shadow-sm border border-slate-100">
+            <!-- Title Bar -->
+            <div class="flex items-center justify-between mb-6 pb-2 border-b border-slate-50">
+              <div class="flex items-center space-x-2 text-slate-800 font-bold text-base">
+                <i data-lucide="gauge" class="w-5 h-5 text-blue-500"></i>
+                <span>任务控制</span>
+              </div>
+              <div class="w-2.5 h-2.5 rounded-full bg-slate-300" id="taskStatusIndicator"></div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex items-center gap-4 mb-8">
+              <button onclick="openNewTaskModal()" class="flex-1 bg-[#181E2C] hover:bg-slate-800 text-white font-medium py-3.5 px-6 rounded-xl transition flex items-center justify-center space-x-2 shadow-sm">
+                <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+                <span>新建任务</span>
+              </button>
+              <button onclick="stopTasks()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-medium py-3.5 px-6 rounded-xl border border-slate-200/80 transition flex items-center justify-center">
+                <span>停止</span>
+              </button>
+            </div>
+
+            <!-- Realtime Status Sub-Card -->
+            <div class="bg-[#F8FAFD] rounded-[20px] p-6 border border-slate-100 space-y-5">
+              <div class="flex items-center space-x-2 text-slate-500 text-sm font-medium">
+                <i data-lucide="activity" class="w-4 h-4"></i>
+                <span>实时状态</span>
+              </div>
+
+              <!-- Progress Header & Bar -->
+              <div>
+                <div class="flex justify-between items-center text-sm font-semibold text-slate-700 mb-2">
+                  <span>进度</span>
+                  <span id="taskProgressText">0/0</span>
+                </div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div id="taskProgressBar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+              </div>
+
+              <!-- Stat Details Grid -->
+              <div class="grid grid-cols-2 gap-y-3 pt-2 text-sm">
+                <div class="flex items-center justify-between pr-8">
+                  <span class="text-slate-500">成功</span>
+                  <span id="statSuccessCount" class="font-bold text-emerald-600">0</span>
+                </div>
+                <div class="flex items-center justify-between pl-8 border-l border-slate-200">
+                  <span class="text-slate-500">失败</span>
+                  <span id="statFailedCount" class="font-bold text-red-500">1</span>
+                </div>
+                <div class="flex items-center justify-between pr-8">
+                  <span class="text-slate-500">已耗时</span>
+                  <span id="statElapsedTime" class="font-medium text-slate-700">0s</span>
+                </div>
+                <div class="flex items-center justify-between pl-8 border-l border-slate-200">
+                  <span class="text-slate-500">平均耗时</span>
+                  <span id="statAvgTime" class="font-medium text-slate-700">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. MAILNEST TAB (图2 MailNest 临时邮箱) -->
+        <section id="tab-mailnest" class="tab-pane hidden space-y-5">
+          <div class="bg-white rounded-[24px] p-7 shadow-sm border border-slate-100">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white">
+                  <i data-lucide="bird" class="w-4 h-4"></i>
+                </div>
+                <h2 class="text-lg font-bold text-slate-800">MailNest 临时邮箱</h2>
+              </div>
+              <span id="mailnestStatusBadge" class="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-500 rounded-md">未配置</span>
+            </div>
+
+            <!-- Card Content -->
+            <div class="bg-[#F8FAFD] rounded-[20px] p-6 border border-slate-100 space-y-5">
+              <div class="flex items-center space-x-2 text-emerald-600 font-semibold text-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>添加新配置</span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">API KEY</label>
+                  <input type="text" id="mailnestApiKey" value="sk_a5qsXT9x4Jv_AkLD_kV3kjGoP3WDM5qDH7K" placeholder="sk_..." class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition font-mono" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">项目代码</label>
+                  <input type="text" id="mailnestProjectCode" value="aws001" placeholder="如 aws001" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-blue-500 transition font-mono" />
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-3 pt-2">
+                <button onclick="testMailnestConnection()" class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm flex items-center space-x-2 transition">
+                  <i data-lucide="check-circle" class="w-4 h-4"></i>
+                  <span>测试连接</span>
+                </button>
+                <button onclick="saveMailnestConfig()" class="px-6 py-2.5 rounded-xl bg-[#181E2C] hover:bg-slate-800 text-white font-semibold text-sm flex items-center space-x-2 transition shadow-sm">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>保存配置</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Mailbox Tester & Generator -->
+            <div class="mt-8 pt-6 border-t border-slate-100">
+              <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center space-x-2">
+                <i data-lucide="inbox" class="w-4 h-4 text-blue-500"></i>
+                <span>邮箱实时测试与验证码捕获</span>
+              </h3>
+              <div class="flex items-center gap-3">
+                <button onclick="generateMailbox()" class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition flex items-center space-x-1">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                  <span>生成临时测试邮箱</span>
+                </button>
+                <div id="activeGeneratedEmail" class="text-xs font-mono text-slate-600 bg-slate-100 px-3 py-2 rounded-lg flex-1 truncate">
+                  暂无活动邮箱
+                </div>
+                <button onclick="pollLatestOtp()" class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition">
+                  抓取验证码
+                </button>
+              </div>
+              <div id="otpResultBox" class="mt-3 text-xs text-slate-500"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. IP PROXY MANAGEMENT TAB (图3 IP 管理) -->
+        <section id="tab-proxies" class="tab-pane hidden space-y-5">
+          <div class="bg-white rounded-[24px] p-7 shadow-sm border border-slate-100">
+            
+            <!-- Top Actions & Search Bar (Exact Match with Image #3) -->
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-lg font-bold text-slate-800">IP 管理</h2>
+              <button onclick="openAddProxyModal()" class="bg-[#181E2C] hover:bg-slate-800 text-white text-sm font-medium py-2.5 px-5 rounded-xl transition flex items-center space-x-1 shadow-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>添加代理</span>
+              </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 mb-6">
+              <div class="flex-1 min-w-[240px]">
+                <input type="text" id="proxySearchInput" oninput="loadProxies()" placeholder="搜索出口 IP / 地址 / 国家" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:bg-white focus:border-blue-500 transition" />
+              </div>
+              <select id="proxyStatusFilter" onchange="loadProxies()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-600 focus:outline-none">
+                <option value="all">全部状态</option>
+                <option value="enabled">已启用</option>
+                <option value="disabled">已禁用</option>
+              </select>
+              <button onclick="loadProxies()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm text-slate-700 font-medium transition">
+                刷新
+              </button>
+              <button onclick="batchTestProxies()" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm text-slate-700 font-medium transition">
+                批量测试
+              </button>
+              <button onclick="batchDeleteProxies()" class="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 text-sm font-medium transition">
+                批量删除
+              </button>
+            </div>
+
+            <!-- Proxy List Table Container -->
+            <div class="bg-[#F8FAFD] rounded-[20px] border border-slate-100 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="text-xs font-semibold text-slate-400 border-b border-slate-200/60">
+                      <th class="py-3.5 px-5 w-10">
+                        <input type="checkbox" id="selectAllProxies" onchange="toggleSelectAll(this)" class="rounded border-slate-300 text-blue-600 focus:ring-0" />
+                      </th>
+                      <th class="py-3.5 px-5">地址</th>
+                      <th class="py-3.5 px-5">类型</th>
+                      <th class="py-3.5 px-5">位置</th>
+                      <th class="py-3.5 px-5">延迟</th>
+                      <th class="py-3.5 px-5">状态</th>
+                      <th class="py-3.5 px-5 text-right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="proxyTableBody" class="text-sm divide-y divide-slate-100 text-slate-700">
+                    <!-- Dynamically populated rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. ACCOUNTS LIST TAB -->
+        <section id="tab-accounts" class="tab-pane hidden space-y-5">
+          <div class="bg-white rounded-[24px] p-7 shadow-sm border border-slate-100">
+            <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
+              <div>
+                <h2 class="text-lg font-bold text-slate-800">已处理账号与兑换日志</h2>
+                <p class="text-xs text-slate-400 mt-1">自动记录通过服务激活领取的 Google 账号及权益状态</p>
+              </div>
+              <button onclick="loadAccounts()" class="px-4 py-2 border border-slate-200 text-slate-700 text-sm rounded-xl hover:bg-slate-50">
+                刷新列表
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-xs font-semibold text-slate-400 border-b border-slate-200/60">
+                    <th class="py-3 px-4">账号/邮箱</th>
+                    <th class="py-3 px-4">订阅权益计划</th>
+                    <th class="py-3 px-4">状态</th>
+                    <th class="py-3 px-4">时间</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsTableBody" class="text-sm divide-y divide-slate-100 text-slate-700">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: 新建任务 -->
+  <div id="newTaskModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-[24px] w-full max-w-lg p-6 shadow-2xl border border-slate-100 space-y-5">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800">新建自动兑换任务</h3>
+        <button onclick="closeModal('newTaskModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">兑换链接 (serviceactivation URL)</label>
+          <textarea id="taskUrlInput" rows="3" placeholder="https://serviceactivation.google.com/subscription/new/..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-blue-500 font-mono text-xs"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">指定代理 IP (可选，留空使用默认启用的代理)</label>
+          <input type="text" id="taskProxyInput" placeholder="http://127.0.0.1:7890" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-blue-500 font-mono" />
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="taskAutoConfirm" checked class="rounded border-slate-300 text-blue-600 focus:ring-0" />
+          <label for="taskAutoConfirm" class="text-xs text-slate-600">自动点击并完成订阅确认</label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-3">
+        <button onclick="closeModal('newTaskModal')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
+        <button onclick="submitNewTask()" class="px-5 py-2 text-sm bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium">开始执行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: 添加代理 -->
+  <div id="addProxyModal" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-[24px] w-full max-w-md p-6 shadow-2xl border border-slate-100 space-y-5">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-800">添加防风控代理 IP</h3>
+        <button onclick="closeModal('addProxyModal')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">代理地址 (IP:端口)</label>
+          <input type="text" id="modalProxyAddr" placeholder="138.74.196.236:8080" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 font-mono" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">网络类型</label>
+            <select id="modalProxyType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none">
+              <option value="家宽">家宽 (Residential)</option>
+              <option value="数据中心">数据中心 (DC)</option>
+              <option value="移动网络">移动网络 (Mobile)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5">地区</label>
+            <input type="text" id="modalProxyCountry" value="美国" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-3">
+        <button onclick="closeModal('addProxyModal')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">取消</button>
+        <button onclick="saveNewProxy()" class="px-5 py-2 text-sm bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium">确认添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Controller -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Navigation Tab Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      
+      const target = document.getElementById(`tab-${tabId}`);
+      const btn = document.getElementById(`btn-${tabId}`);
+      if (target) target.classList.remove('hidden');
+      if (btn) btn.classList.add('active');
+
+      // Position sidebar indicator
+      const indicator = document.getElementById('sidebarIndicator');
+      if (btn && indicator) {
+        const rect = btn.getBoundingClientRect();
+        const parentRect = btn.closest('aside').getBoundingClientRect();
+        indicator.style.top = `${btn.offsetTop + 12}px`;
+      }
+
+      const titles = {
+        'dashboard': '概览',
+        'accounts': '账号管理',
+        'mailnest': 'MailNest 临时邮箱',
+        'proxies': 'IP 管理'
+      };
+      document.getElementById('headerTitle').innerText = titles[tabId] || '概览';
+      lucide.createIcons();
+    }
+
+    // Modal controls
+    function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openNewTaskModal() { showModal('newTaskModal'); }
+    function openAddProxyModal() { showModal('addProxyModal'); }
+
+    // Load Stats & Dashboard
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('statTotalAccounts').innerText = data.total_accounts;
+        document.getElementById('statSuccessRate').innerText = data.success_rate;
+        document.getElementById('statSuccessCount').innerText = data.success_count;
+        document.getElementById('statFailedCount').innerText = data.failed_count;
+        document.getElementById('taskProgressText').innerText = data.progress;
+        document.getElementById('statElapsedTime').innerText = data.elapsed || '0s';
+        document.getElementById('statAvgTime').innerText = data.avg_time || '-';
+        
+        document.getElementById('taskProgressBar').style.width = '100%';
+      } catch(e) { console.error(e); }
+    }
+
+    // MailNest API Operations
+    async function loadMailnestConfig() {
+      try {
+        const res = await fetch('/api/mailnest/config');
+        const data = await res.json();
+        if (data.api_key) {
+          document.getElementById('mailnestApiKey').value = data.api_key;
+          document.getElementById('mailnestProjectCode').value = data.project_code || '';
+          const badge = document.getElementById('mailnestStatusBadge');
+          badge.innerText = '已配置';
+          badge.className = 'text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-md';
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function testMailnestConnection() {
+      const apiKey = document.getElementById('mailnestApiKey').value.trim();
+      const projCode = document.getElementById('mailnestProjectCode').value.trim();
+      try {
+        const res = await fetch('/api/mailnest/test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ api_key: apiKey, project_code: projCode })
+        });
+        const result = await res.json();
+        alert(result.success ? "✅ 连接成功：" + result.message : "❌ 连接失败：" + result.message);
+      } catch(e) {
+        alert("请求异常: " + e);
+      }
+    }
+
+    async function saveMailnestConfig() {
+      const apiKey = document.getElementById('mailnestApiKey').value.trim();
+      const projCode = document.getElementById('mailnestProjectCode').value.trim();
+      try {
+        const res = await fetch('/api/mailnest/config', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ api_key: apiKey, project_code: projCode })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert("MailNest 配置已成功保存！");
+          loadMailnestConfig();
+        }
+      } catch(e) { alert("保存失败: " + e); }
+    }
+
+    async function generateMailbox() {
+      try {
+        const res = await fetch('/api/mailnest/create_mailbox', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('activeGeneratedEmail').innerText = data.email;
+          document.getElementById('otpResultBox').innerText = '正在等待邮件验证码中...';
+        } else {
+          alert("获取失败: " + data.message);
+        }
+      } catch(e) { alert("请求错误: " + e); }
+    }
+
+    async function pollLatestOtp() {
+      const email = document.getElementById('activeGeneratedEmail').innerText;
+      if (!email || email.includes('暂无')) {
+        alert("请先生成临时邮箱！");
+        return;
+      }
+      try {
+        const res = await fetch(`/api/mailnest/messages?mailbox_id=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        document.getElementById('otpResultBox').innerText = JSON.stringify(data);
+      } catch(e) { console.error(e); }
+    }
+
+    // Proxy Management Operations (Matching Image #3)
+    async function loadProxies() {
+      const q = document.getElementById('proxySearchInput').value;
+      const filter = document.getElementById('proxyStatusFilter').value;
+      try {
+        const res = await fetch(`/api/proxies?query=${encodeURIComponent(q)}&status_filter=${filter}`);
+        const proxies = await res.json();
+        const tbody = document.getElementById('proxyTableBody');
+        tbody.innerHTML = '';
+
+        proxies.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50/80 transition';
+          tr.innerHTML = `
+            <td class="py-4 px-5">
+              <input type="checkbox" data-id="${p.id}" class="proxy-select-box rounded border-slate-300 text-blue-600 focus:ring-0" />
+            </td>
+            <td class="py-4 px-5 font-mono font-medium text-slate-800">${p.ip || p.address}</td>
+            <td class="py-4 px-5">
+              <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100/70 text-emerald-700">${p.type || '家宽'}</span>
+            </td>
+            <td class="py-4 px-5">
+              <span class="inline-flex items-center space-x-1.5 font-medium">
+                <span>🇺🇸</span>
+                <span>${p.country_name || '美国'}</span>
+              </span>
+            </td>
+            <td class="py-4 px-5 font-mono">
+              <span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200/50">${p.latency || 922}ms</span>
+            </td>
+            <td class="py-4 px-5">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" ${p.status ? 'checked' : ''} onchange="toggleProxyStatus('${p.id}', this.checked)" class="sr-only peer">
+                <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </td>
+            <td class="py-4 px-5 text-right space-x-3 text-xs font-medium">
+              <button onclick="testProxy('${p.id}')" class="text-slate-600 hover:text-blue-600">测试</button>
+              <button onclick="editProxy('${p.id}')" class="text-slate-600 hover:text-blue-600">编辑</button>
+              <button onclick="deleteProxy('${p.id}')" class="text-red-500 hover:text-red-700">删除</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Update active proxy display on dashboard
+        if (proxies.length > 0 && proxies[0].status) {
+          document.getElementById('statActiveProxy').innerText = proxies[0].address;
+        }
+        lucide.createIcons();
+      } catch(e) { console.error(e); }
+    }
+
+    async function saveNewProxy() {
+      const address = document.getElementById('modalProxyAddr').value.trim();
+      const type = document.getElementById('modalProxyType').value;
+      const country = document.getElementById('modalProxyCountry').value.trim();
+      if (!address) { alert("请输入代理地址！"); return; }
+      
+      try {
+        await fetch('/api/proxies', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ address, type, country_name: country })
+        });
+        closeModal('addProxyModal');
+        document.getElementById('modalProxyAddr').value = '';
+        loadProxies();
+      } catch(e) { alert("添加失败: " + e); }
+    }
+
+    async function toggleProxyStatus(id, status) {
+      await fetch(`/api/proxies/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status })
+      });
+    }
+
+    async function testProxy(id) {
+      const res = await fetch(`/api/proxies/${id}/test`, { method: 'POST' });
+      const d = await res.json();
+      alert(`测试结果: 延迟 ${d.latency}ms`);
+      loadProxies();
+    }
+
+    async function deleteProxy(id) {
+      if (!confirm("确定删除该代理吗？")) return;
+      await fetch(`/api/proxies/${id}`, { method: 'DELETE' });
+      loadProxies();
+    }
+
+    function toggleSelectAll(master) {
+      document.querySelectorAll('.proxy-select-box').forEach(cb => cb.checked = master.checked);
+    }
+
+    async function batchDeleteProxies() {
+      const checked = Array.from(document.querySelectorAll('.proxy-select-box:checked')).map(cb => cb.dataset.id);
+      if (checked.length === 0) { alert("请先勾选需要删除的代理！"); return; }
+      if (!confirm(`确定删除选中的 ${checked.length} 项代理吗？`)) return;
+      
+      await fetch('/api/proxies/batch_delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ ids: checked })
+      });
+      loadProxies();
+    }
+
+    async function batchTestProxies() {
+      await fetch('/api/proxies/batch_test', { method: 'POST' });
+      loadProxies();
+      alert("批量延迟测速完成！");
+    }
+
+    // Submit New Task
+    async function submitNewTask() {
+      const url = document.getElementById('taskUrlInput').value.trim();
+      const autoConfirm = document.getElementById('taskAutoConfirm').checked;
+      const proxy = document.getElementById('taskProxyInput').value.trim();
+      if (!url) { alert("请输入兑换链接！"); return; }
+
+      closeModal('newTaskModal');
+      document.getElementById('taskStatusIndicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+      
+      try {
+        const res = await fetch('/api/tasks/run', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ url, auto_confirm: autoConfirm, proxy })
+        });
+        const result = await res.json();
+        document.getElementById('taskStatusIndicator').className = 'w-2.5 h-2.5 rounded-full bg-slate-300';
+        alert(result.success ? "🎉 兑换完成: " + result.message : "⚠️ 兑换未成功: " + result.message);
+        loadStats();
+        loadAccounts();
+      } catch(e) {
+        alert("执行异常: " + e);
+        document.getElementById('taskStatusIndicator').className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+      }
+    }
+
+    // Load Accounts
+    async function loadAccounts() {
+      try {
+        const res = await fetch('/api/accounts');
+        const list = await res.json();
+        const tbody = document.getElementById('accountsTableBody');
+        tbody.innerHTML = '';
+        list.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="py-3 px-4 font-mono">${item.email || 'Google User'}</td>
+            <td class="py-3 px-4 font-medium">${item.plan || 'Google One / Advanced'}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded text-xs ${item.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}">
+                ${item.status === 'success' ? '已开通' : '失败'}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-slate-400 text-xs">${item.created_at}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch(e) { console.error(e); }
+    }
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      loadMailnestConfig();
+      loadProxies();
+      loadAccounts();
+      setInterval(loadStats, 5000);
+    });
+  </script>
+</body>
+</html>
