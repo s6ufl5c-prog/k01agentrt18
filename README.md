@@ -55,7 +55,7 @@ python server.py
 
 ---
 
-### 1. 首次运行：保存 Google 登录态 (推荐)
+### 2. 首次运行：保存 Google 登录态 (推荐)
 
 运行如下命令，会自动弹出一个纯净浏览器窗口供你登录需要接收权益的 Google 账号：
 ```bash
@@ -65,7 +65,7 @@ python main.py --login-setup
 
 ---
 
-### 2. 剪贴板秒抢模式 (Sniper Mode)
+### 3. 剪贴板秒抢模式 (Sniper Mode)
 
 当你正在各大群聊、论坛蹲守放码时，开启此模式：
 ```bash
@@ -75,7 +75,7 @@ python main.py --watch
 
 ---
 
-### 3. 单链接即时兑换
+### 4. 单链接即时兑换
 
 直接通过命令行指定 URL 兑换：
 ```bash
@@ -84,7 +84,7 @@ python main.py -u "https://serviceactivation.google.com/subscription/new/..."
 
 ---
 
-### 4. 交互式菜单
+### 5. 交互式菜单
 
 直接运行 `python main.py`，根据彩色交互式菜单选择对应操作。
 
